@@ -5,11 +5,6 @@
         <img src="./assets/RCC.png" alt="" style="left: 6px; height: 60px;position: absolute;width: 203px;">
           <el-dropdown>
             <i class="el-icon-setting" style="margin-right: 15px"></i>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>查看</el-dropdown-item>
-              <el-dropdown-item>新增</el-dropdown-item>
-              <el-dropdown-item>删除</el-dropdown-item>
-            </el-dropdown-menu>
           </el-dropdown>
           <span>王小虎</span>
         </el-header>
@@ -23,7 +18,7 @@
             <template slot="title">首页</template>
             <el-menu-item-group>
               <template slot="title">客户管理</template>
-                <el-menu-item index="1-1" to="/">管理列表</el-menu-item>
+              <el-menu-item index="1-1" to="/">管理列表</el-menu-item>
             </el-menu-item-group>
           </el-submenu>
           
