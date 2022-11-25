@@ -14,7 +14,7 @@
     <el-tabs v-model="activeName" style="height: 200px;">
         <el-tab-pane label="联系人" name="first" >
             <el-button type="primary" size="small" @click="dialogContactsVisible = true">添加联系人</el-button>
-            <el-button type="primary" size="small" @click="infoRefresh">刷新</el-button>
+            <el-button type="primary" size="small" @click="contactRefresh">刷新</el-button>
             <el-card class="box-card" v-for="(item, i) in contacts.list" :key="i">
                 <div slot="header" class="clearfix">
                     <span>{{ item.name }} {{ item.sex == 1 ? '先生' : '女士' }} {{ item.department }} 
@@ -37,7 +37,7 @@
         <el-tab-pane label="跟进记录" name="second">
             <el-button type="primary" size="small" @click="dialogFollowsVisible = true">添加跟进</el-button>
             <el-button type="primary" size="small" @click="editFollowStatus">完成</el-button>
-            <el-button type="primary" size="small" @click="infoRefresh">刷新</el-button>
+            <el-button type="primary" size="small" @click="followRefresh">刷新</el-button>
             <el-card class="box-card">
                 <div slot="header" class="clearfix">
                     <span>未完成（{{ follows.follow_not.length || 0 }}条）</span>
@@ -331,8 +331,11 @@
     },
     methods: {
         // 刷新信息
-        infoRefresh() {
-            this.getInfo()
+        followRefresh() {
+            this.getFollow()
+        },
+        contactRefresh() {
+            this.getCustomer();
         },
         // 获取客户信息
         getInfo() {
@@ -481,7 +484,7 @@
                                 message: '保存成功',
                                 type: 'success'
                             });
-                            this.getInfo()
+                            this.getCustomer()
                         }
                     })
                     .catch((error) => {
@@ -514,7 +517,7 @@
                             message: '保存成功',
                             type: 'success'
                         });
-                        this.getInfo()
+                        this.getFollow()
                         }
                     })
                     .catch((error) => {
