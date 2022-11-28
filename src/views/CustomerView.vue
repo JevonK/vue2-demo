@@ -67,7 +67,16 @@
           </el-form-item>
           <el-form-item label="跟进人员" :label-width="formLabelWidth" prop="admin_id">
             <el-select v-model="form.admin_id" placeholder="跟进人员">
-              <el-option v-for="(item,i) in users" :key="i" :label="item.name" :value="String(item.id)"></el-option>
+              <el-option v-for="(item,i) in users.list" :key="i" :label="item.name" :value="String(item.id)"></el-option>
+              <div style="float: right;margin-right:10px;padding-bottom: 10px">
+                  <el-pagination
+                    @current-change="selectChange"
+                    :current-page="selectPage"
+                    :page-size="selectPageSize"
+                    layout=" prev, pager, next,total"
+                    :total="users.total">
+                  </el-pagination>
+                </div>
             </el-select>
           </el-form-item>
           <el-form-item label="公司电话" :label-width="formLabelWidth" prop="phone">
@@ -81,7 +90,7 @@
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
-            <el-button @click="dialogFormVisible = false">保 存</el-button>
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
             <el-button type="primary" @click="submiteSave">确 定</el-button>
         </div>
     </el-dialog>
@@ -89,14 +98,26 @@
 </template>
 
 <script>
-import axios from 'axios'
-import Qs from 'qs'
+import {customerList, adminList, customerSave, customerDel} from '../api'
 // @ is an alias to /src
 
 export default {
   name: 'CustomerView',
   data() {
+    var validatePhone = (rule, value, callback) => {
+        if (value === '') {
+          callback(new Error('请输入密码'));
+        } else {
+          const regex = new RegExp(/^1(3\d|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8\d|9[0-35-9])\d{8}$/);
+          if (!regex.test(value)) {
+            callback(new Error('您输入的手机号有问题'));
+          }
+          callback();
+        }
+      };
     return {
+      selectPage: 1,
+      selectPageSize: 10,
       dialogFormVisible: false,
       form: {
         id: 0,
@@ -112,6 +133,7 @@ export default {
           ],
           phone: [
             { required: true, message: '请输入手机号', trigger: 'blur' },
+            { validator: validatePhone, trigger: 'blur' }
           ],
           address: [
             { required: true, message: '请输入地址', trigger: 'blur' },
@@ -142,7 +164,7 @@ export default {
     // 获取列表
     getList() {
       const { page, page_size } = this;
-      axios.get('http://localhost:3000/customers/get-list', {params: {page, page_size}}).then(res => {
+      customerList({page, page_size}).then(res => {
         if(res.data.code == 0) {
           this.tableData = res.data.data
         }
@@ -150,7 +172,7 @@ export default {
     },
     // 获取跟进人员
     getUser(){
-      axios.get('http://localhost:3000/admins/get-list', {params: {page:1, page_size: 99999}}).then(res => {
+      adminList({page: this.selectPage, page_size: this.selectPageSize}).then(res => {
         if(res.data.code == 0) {
           this.users = res.data.data
         }
@@ -171,11 +193,7 @@ export default {
     submiteSave() {
       this.$refs['form'].validate((valid) => {
           if (valid) {
-            axios({
-                url: 'http://localhost:3000/customers/save', 
-                method: 'post',
-                data: Qs.stringify(this.form), 
-              })
+            customerSave(this.form)
                 .then(res => {
                 if(res.data.code == 0) {
                   // vm.users = res.data.data
@@ -209,7 +227,7 @@ export default {
     },
     // 删除记录
     del(id) {
-            axios.get('http://localhost:3000/customers/del', {params: {id: id}}).then(res => {
+      customerDel({id: id}).then(res => {
                 if(res.data.code == 0) {
                     this.$message({
                             message: '删除成功',
@@ -229,6 +247,10 @@ export default {
     handleCurrentChange(page) {
       this.page = page;
       this.getList()
+    },
+    selectChange(page) {
+      this.selectPage = page;
+      this.getUser()
     },
   },
 }

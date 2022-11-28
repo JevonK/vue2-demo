@@ -146,7 +146,7 @@
         </el-tab-pane>
     </el-tabs>
     
-    <el-dialog :rules="rules" title="添加联系人" :visible.sync="dialogContactsVisible" :before-close="contactesClose">
+    <el-dialog title="添加联系人" :visible.sync="dialogContactsVisible" :before-close="contactesClose">
         <el-form ref="formContacts" :rules="rules" :model="formContacts">
           <el-form-item label="名称" :label-width="formLabelWidth" prop="name">
             <el-input v-model="formContacts.name" placeholder="名称"></el-input>
@@ -167,7 +167,7 @@
               <el-option label="重要" :value="3"></el-option>
             </el-select>
           </el-form-item>
-          <el-form-item v-for="(val, i) in phones" :key="i" :label="'手机' + (i ? i : '')" :label-width="formLabelWidth">
+          <el-form-item v-for="(val, i) in formContacts.phones" :key="i" :label="'手机' + (i ? i : '')" :label-width="formLabelWidth" :prop="`phones[${i}].value`" :rules="rules.phones">
                 <input class="inline-input" type="text" style="width: 40vh" v-model="val.value" placeholder="手机" />
                 <i v-if="i" class="el-icon-delete" style="margin-left: 20px;" @click="delPhone(i)"></i>
                 <el-button v-else size="mini" @click="addPhone">增加</el-button>
@@ -188,8 +188,8 @@
         </div>
     </el-dialog>
     <el-dialog title="添加跟进" :visible.sync="dialogFollowsVisible" :before-close="followsClose">
-        <el-form ref="formFollows" :model="formFollows.arrange_time">
-            <el-form-item label="安排时间" :label-width="formLabelWidth">
+        <el-form rules="rules" ref="formFollows" :model="formFollows">
+            <el-form-item label="安排时间" :label-width="formLabelWidth" prop="arrange_time">
                 <el-date-picker
                     v-model="formFollows.arrange_time"
                     type="datetime"
@@ -198,7 +198,16 @@
             </el-form-item>
             <el-form-item label="跟进人" :label-width="formLabelWidth">
                 <el-select v-model="formFollows.admin_id" placeholder="跟进人员">
-                    <el-option v-for="(item,i) in users" :key="i" :label="item.name" :value="item.id"></el-option>
+                    <el-option v-for="(item,i) in users.list" :key="i" :label="item.name" :value="item.id"></el-option>
+                    <div style="float: right;margin-right:10px;padding-bottom: 10px">
+                        <el-pagination
+                            @current-change="selectChange"
+                            :current-page="selectPage"
+                            :page-size="selectPageSize"
+                            layout=" prev, pager, next,total"
+                            :total="users.total">
+                        </el-pagination>
+                    </div>
                 </el-select>
             </el-form-item>
             <el-form-item label="联系人" :label-width="formLabelWidth">
@@ -238,14 +247,25 @@
   
   <script>
   // @ is an alias to /src
-    import axios from 'axios'
-    import Qs from 'qs'
-
+  import {customerInfo, adminList, contactList, followList, followStatus, followDel, contactsSave, followsSave} from '../api'
   
   export default {
     name: 'CustomerView',
     data() {
+        var validatePhone = (rule, value, callback) => {
+        if (value === '') {
+          callback(new Error('请输入手机号'));
+        } else {
+          const regex = new RegExp(/^1(3\d|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8\d|9[0-35-9])\d{8}$/);
+          if (!regex.test(value)) {
+            callback(new Error('您输入的手机号有问题'));
+          }
+          callback();
+        }
+      };
       return {
+        selectPageSize: 10,
+        selectPage: 1,
         dialogFollowsVisible: false,
         dialogContactsVisible: false,
         formContacts: {
@@ -256,24 +276,19 @@
             importanc: '',
             email: '',
             remark: '',
-            phones: '',
+            phones: [{'value' : ''}],
         },
         rules: {
             name: [
                 { required: true, message: '请输入公司名称', trigger: 'blur' },
             ],
-            telephone: [
-                { required: true, message: '请输入电话', trigger: 'blur' },
+            arrange_time: [
+                { required: true, message: '请选择安排时间', trigger: 'blur' },
             ],
-            importanc: [
-                { required: true, message: '请选择重要性', trigger: 'blur' },
-            ],
-            email: [
-                { required: true, message: '请输入邮箱', trigger: 'blur' },
-            ],
-            remark: [
-                { required: true, message: '请输入备注', trigger: 'blur' },
-            ],
+            phones: [
+                { required: true, message: '请输入手机号', trigger: 'blur' },
+                { validator: validatePhone, trigger: 'blur' }
+            ]
         },
         levels: {
             1: '了解客户需求及开通试用',
@@ -339,14 +354,14 @@
         },
         // 获取客户信息
         getInfo() {
-            axios.get('http://localhost:3000/customers/show', {params: {id: this.$route.query.customer_id}}).then(res => {
+            customerInfo({id: this.$route.query.customer_id}).then(res => {
                 if(res.data.code == 0) {
                     this.info = res.data.data
                 }
             })
         },
         getCustomer() {
-            axios.get('http://localhost:3000/customer-contacts/get-list', {params: {customer_id: this.$route.query.customer_id, page: 1, page_size: 999999}}).then(res => {
+            contactList({customer_id: this.$route.query.customer_id, page: 1, page_size: 999999}).then(res => {
                 if(res.data.code == 0) {
                     this.contacts = res.data.data
                     for(let i in this.contacts.list) {
@@ -361,7 +376,7 @@
             })
         },
         getFollow() {
-            axios.get('http://localhost:3000/customer-follows/get-list', {params: {customer_id: this.$route.query.customer_id, page: 1, page_size: 999999}}).then(res => {
+            followList({customer_id: this.$route.query.customer_id, page: 1, page_size: 999999}).then(res => {
                 if(res.data.code == 0) {
                     this.follows = res.data.data
                     
@@ -370,7 +385,7 @@
         },
         // 获取跟进人员
         getUser(){
-            axios.get('http://localhost:3000/admins/get-list', {params: {page:1, page_size: 99999}}).then(res => {
+            adminList({page: this.selectPage, page_size: this.selectPageSize}).then(res => {
                 if(res.data.code == 0) {
                     this.users = res.data.data
                 }
@@ -415,7 +430,7 @@
             console.log(this.delFollowIds)
         },
         addPhone() {
-            this.phones.push({value: ''});
+            this.formContacts.phones.push({value: ''});
         },
         delPhone(i) {
             this.phones.splice(i, 1)
@@ -427,11 +442,7 @@
         },
         // 批量完成跟进记录
         editFollowStatus() {
-            axios({
-                        url: 'http://localhost:3000/customer-follows/edit-status', 
-                        method: 'post',
-                        data: Qs.stringify({ids: this.delFollowIds}), 
-                    })
+            followStatus({ids: this.delFollowIds})
                     .then(res => {
                         if(res.data.code == 0) {
                             this.$message({
@@ -449,7 +460,7 @@
         },
         // 删除跟进记录
         delFollow(follow_id) {
-            axios.get('http://localhost:3000/customer-follows/del', {params: {id: follow_id}}).then(res => {
+            followDel({id: follow_id}).then(res => {
                 if(res.data.code == 0) {
                     this.$message({
                             message: '删除成功',
@@ -470,12 +481,9 @@
             this.$refs['formContacts'].validate((valid) => {
                 if (valid) {
                     console.log(this.formContacts);
-                    this.formContacts['phones'] = JSON.stringify(this.phones)
-                    axios({
-                        url: 'http://localhost:3000/customer-contacts/save', 
-                        method: 'post',
-                        data: Qs.stringify(this.formContacts), 
-                    })
+                    let data = JSON.parse(JSON.stringify(this.formContacts))
+                    data['phones'] = JSON.stringify(data.phones)
+                    contactsSave(data)
                     .then(res => {
                         if(res.data.code == 0) {
                             // vm.users = res.data.data
@@ -504,11 +512,7 @@
         submiteSaveFollows() {
             this.$refs['formFollows'].validate((valid) => {
                 if (valid) {
-                    axios({
-                        url: 'http://localhost:3000/customer-follows/save', 
-                        method: 'post',
-                        data: Qs.stringify(this.formFollows), 
-                    })
+                    followsSave(this.formFollows)
                         .then(res => {
                         if(res.data.code == 0) {
                         // vm.users = res.data.data
@@ -532,6 +536,10 @@
                     return false;
                 }
             });
+        },
+        selectChange(page) {
+            this.selectPage = page;
+            this.getUser()
         },
     }
   }

@@ -1,8 +1,7 @@
 import Vue from 'vue'
-import './plugins/axios'
+import './plugins/service'
 import App from './App.vue'
 import './plugins/element.js'
-import './plugins/axios.js'
 import router from './router'
 
 new Vue({
