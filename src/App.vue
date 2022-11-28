@@ -17,7 +17,7 @@
                   <template slot="title">首页</template>
                   <el-menu-item-group>
                     <template slot="title">客户管理</template>
-                    <el-menu-item :to="{ path: '/' }">管理列表</el-menu-item>
+                    <el-menu-item :to="{ path: '/' }">公司列表</el-menu-item>
                   </el-menu-item-group>
                 </el-submenu>
               </el-menu>
