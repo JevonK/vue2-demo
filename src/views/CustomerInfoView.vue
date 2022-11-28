@@ -24,7 +24,7 @@
 
                 </div>
                 <el-col :span="8">
-                    手机：<p v-for="(val, inx) in contact_phones[item.id]" :key="inx">{{ val.value }}</p>
+                    手机：<p v-for="(val, inx) in item.phones" :key="inx">{{ val.value }}</p>
                 </el-col>
                 <el-col :span="8">
                     电话：{{ item.telephone }}
@@ -365,13 +365,9 @@
                 if(res.data.code == 0) {
                     this.contacts = res.data.data
                     for(let i in this.contacts.list) {
-                        if (this.contacts.list[i].phones == '[]'){
-                            this.contact_phones[this.contacts.list[i].id] = JSON.parse(this.contacts.list[i].phones) || {}
-                        } else {
-                            this.contact_phones[this.contacts.list[i].id] = JSON.parse(JSON.parse(this.contacts.list[i].phones))
-                        }
+                        this.contacts.list[i].phones = JSON.parse(this.contacts.list[i].phones) || []
+
                     }
-                    console.log(this.contact_phones)
                 }
             })
         },
